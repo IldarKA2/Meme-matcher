@@ -37,7 +37,7 @@ export type Swipe = {
 export async function fetchMemes(): Promise<Meme[]> {
   const { data, error } = await supabase
     .from("memes")
-    .select("id, image_url, top_text, bottom_text, language, category")
+    .select("id, template, lines, language, category")
     .order("created_at", { ascending: true });
   if (error) throw error;
   return (data ?? []) as Meme[];

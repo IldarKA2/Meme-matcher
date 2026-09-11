@@ -1,12 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Bookmark, Heart, RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { MemeCard } from "@/components/MemeCard";
-import { useMemeData } from "@/hooks/useMemeData";
+import {
+  useDeck,
+  useRefreshMemeData,
+  useSavedMemes,
+  useStatistics,
+} from "@/hooks/useMemeData";
 import { recordSwipe, saveMeme, type Meme } from "@/lib/meme-api";
 import { LIKES_TO_MATCH } from "@/lib/humor";
 import { cn } from "@/lib/utils";
@@ -34,51 +39,57 @@ export const Route = createFileRoute("/")({
 const SWIPE_THRESHOLD = 110;
 
 function SwipePage() {
-  const queryClient = useQueryClient();
-  const { deviceId, memes, swipes, saved, isLoading } = useMemeData();
+  const { deviceId, deck, remaining, isLoading, error } = useDeck();
+  const { saved } = useSavedMemes();
+  const { stats } = useStatistics();
+  const refresh = useRefreshMemeData(deviceId);
 
-  const [pending, setPending] = useState<string[]>([]);
+  const swipeFn = useServerFn(recordSwipe);
+  const saveFn = useServerFn(saveMeme);
+
+  const [consumed, setConsumed] = useState<string[]>([]);
   const [drag, setDrag] = useState(0);
   const [exit, setExit] = useState<"like" | "dislike" | null>(null);
   const startX = useRef<number | null>(null);
 
-  const swipedIds = useMemo(
-    () => new Set([...swipes.map((s) => s.meme_id), ...pending]),
-    [swipes, pending],
+  const queue = useMemo(
+    () => deck.filter((m) => !consumed.includes(m.id)),
+    [deck, consumed],
   );
-  const queue = useMemo(() => memes.filter((m) => !swipedIds.has(m.id)), [memes, swipedIds]);
   const current: Meme | undefined = queue[0];
   const next: Meme | undefined = queue[1];
 
-  const likeCount = swipes.filter((s) => s.action === "like").length;
-  const isSaved = current ? saved.includes(current.id) : false;
+  const likeCount = stats.likes_count;
+  const isSaved = current ? saved.some((m) => m.id === current.id) : false;
 
   const commit = useCallback(
     (meme: Meme, action: "like" | "dislike") => {
       setExit(action);
       window.setTimeout(() => {
-        setPending((p) => [...p, meme.id]);
+        setConsumed((c) => [...c, meme.id]);
         setDrag(0);
         setExit(null);
-        void recordSwipe(deviceId, meme.id, action)
-          .then(() => {
-            void queryClient.invalidateQueries({ queryKey: ["swipes", deviceId] });
-          })
-          .catch(() => toast.error("Couldn't save that swipe. Check your connection."));
+        void swipeFn({ data: { deviceId, memeId: meme.id, action } })
+          .then(() => refresh())
+          .catch((e: unknown) =>
+            toast.error(e instanceof Error ? e.message : "Couldn't save that swipe."),
+          );
       }, 220);
     },
-    [deviceId, queryClient],
+    [deviceId, refresh, swipeFn],
   );
 
   const handleSave = useCallback(() => {
     if (!current) return;
-    void saveMeme(deviceId, current.id)
+    void saveFn({ data: { deviceId, memeId: current.id } })
       .then(() => {
-        void queryClient.invalidateQueries({ queryKey: ["saved", deviceId] });
+        refresh();
         toast.success("Saved to your collection");
       })
-      .catch(() => toast.error("Couldn't save that meme."));
-  }, [current, deviceId, queryClient]);
+      .catch((e: unknown) =>
+        toast.error(e instanceof Error ? e.message : "Couldn't save that meme."),
+      );
+  }, [current, deviceId, refresh, saveFn]);
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (!current || exit) return;
@@ -100,6 +111,7 @@ function SwipePage() {
   };
 
   const offset = exit === "like" ? 700 : exit === "dislike" ? -700 : drag;
+  const left = Math.max(0, remaining - consumed.length);
 
   return (
     <AppShell>
@@ -108,7 +120,7 @@ function SwipePage() {
           <p className="text-muted-foreground">
             {likeCount} / {LIKES_TO_MATCH} likes to your match
           </p>
-          <p className="text-muted-foreground">{queue.length} left</p>
+          <p className="text-muted-foreground">{left} left</p>
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
           <div
@@ -126,12 +138,18 @@ function SwipePage() {
           </Link>
         )}
 
+        {error && (
+          <p className="rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-center text-sm text-destructive">
+            We couldn't load memes right now. Please refresh the page.
+          </p>
+        )}
+
         <div className="relative aspect-[3/4] w-full touch-pan-y select-none">
           {isLoading && (
             <div className="absolute inset-0 animate-pulse rounded-3xl border border-border bg-card" />
           )}
 
-          {!isLoading && !current && (
+          {!isLoading && !current && !error && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-border bg-card px-6 text-center">
               <RotateCcw className="size-8 text-muted-foreground" />
               <h2 className="text-xl font-bold">You've seen them all</h2>

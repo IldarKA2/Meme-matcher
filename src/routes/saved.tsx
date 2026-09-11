@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { MemeCard } from "@/components/MemeCard";
-import { useMemeData } from "@/hooks/useMemeData";
+import { useRefreshMemeData, useSavedMemes } from "@/hooks/useMemeData";
 import { unsaveMeme } from "@/lib/meme-api";
 
 export const Route = createFileRoute("/saved")({
@@ -24,27 +24,33 @@ export const Route = createFileRoute("/saved")({
 });
 
 function SavedPage() {
-  const queryClient = useQueryClient();
-  const { deviceId, memes, saved, isLoading } = useMemeData();
-  const savedMemes = saved
-    .map((id) => memes.find((m) => m.id === id))
-    .filter((m): m is NonNullable<typeof m> => Boolean(m));
+  const { deviceId, saved, isLoading, error } = useSavedMemes();
+  const refresh = useRefreshMemeData(deviceId);
+  const unsaveFn = useServerFn(unsaveMeme);
 
   const remove = (id: string) => {
-    void unsaveMeme(deviceId, id)
+    void unsaveFn({ data: { deviceId, memeId: id } })
       .then(() => {
-        void queryClient.invalidateQueries({ queryKey: ["saved", deviceId] });
+        refresh();
         toast.success("Removed from saved");
       })
-      .catch(() => toast.error("Couldn't remove that meme."));
+      .catch((e: unknown) =>
+        toast.error(e instanceof Error ? e.message : "Couldn't remove that meme."),
+      );
   };
 
   return (
     <AppShell>
       <h1 className="mb-1 text-2xl font-bold">Saved memes</h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        {savedMemes.length} meme{savedMemes.length === 1 ? "" : "s"} in your collection
+        {saved.length} meme{saved.length === 1 ? "" : "s"} in your collection
       </p>
+
+      {error && (
+        <p className="mb-6 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          We couldn't load your saved memes. Please refresh the page.
+        </p>
+      )}
 
       {isLoading && (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -54,7 +60,7 @@ function SavedPage() {
         </div>
       )}
 
-      {!isLoading && savedMemes.length === 0 && (
+      {!isLoading && !error && saved.length === 0 && (
         <div className="rounded-3xl border border-dashed border-border bg-card px-6 py-14 text-center">
           <h2 className="text-lg font-bold">Nothing saved yet</h2>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -70,7 +76,7 @@ function SavedPage() {
       )}
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {savedMemes.map((meme) => (
+        {saved.map((meme) => (
           <div key={meme.id} className="flex flex-col gap-2">
             <div className="aspect-[3/4]">
               <MemeCard meme={meme} />

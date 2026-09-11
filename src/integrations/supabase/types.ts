@@ -102,6 +102,68 @@ export type Database = {
           },
         ]
       }
+      user_statistics: {
+        Row: {
+          device_id: string
+          dislikes_count: number
+          id: string
+          likes_count: number
+          saves_count: number
+          top_category: string | null
+          total_swipes: number
+          updated_at: string
+        }
+        Insert: {
+          device_id: string
+          dislikes_count?: number
+          id?: string
+          likes_count?: number
+          saves_count?: number
+          top_category?: string | null
+          total_swipes?: number
+          updated_at?: string
+        }
+        Update: {
+          device_id?: string
+          dislikes_count?: number
+          id?: string
+          likes_count?: number
+          saves_count?: number
+          top_category?: string | null
+          total_swipes?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_statistics_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["device_id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string
+          device_id: string
+          id: string
+          last_active_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          id?: string
+          last_active_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          id?: string
+          last_active_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

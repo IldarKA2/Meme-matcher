@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Lock } from "lucide-react";
+import { Lock, Users } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { MemeCard } from "@/components/MemeCard";
-import { useMemeData } from "@/hooks/useMemeData";
+import { useLikedMemes, useMatchingUsers, useStatistics } from "@/hooks/useMemeData";
 import {
   CATEGORY_LABELS,
   LIKES_TO_MATCH,
@@ -31,20 +31,18 @@ export const Route = createFileRoute("/matches")({
 });
 
 function MatchesPage() {
-  const { memes, swipes, isLoading } = useMemeData();
+  const { stats, isLoading: statsLoading } = useStatistics();
+  const { liked, isLoading: likedLoading } = useLikedMemes();
 
-  const likedMemes = swipes
-    .filter((s) => s.action === "like")
-    .map((s) => memes.find((m) => m.id === s.meme_id))
-    .filter((m): m is NonNullable<typeof m> => Boolean(m));
-
-  const likeCount = swipes.filter((s) => s.action === "like").length;
+  const likeCount = stats.likes_count;
   const unlocked = likeCount >= LIKES_TO_MATCH;
-  const top = topCategory(likedMemes.map((m) => m.category));
-  const personality = top ? PERSONALITIES[top] : undefined;
-  const breakdown = categoryBreakdown(likedMemes.map((m) => m.category));
+  const { users, isLoading: usersLoading } = useMatchingUsers(unlocked);
 
-  if (isLoading) {
+  const top = stats.top_category ?? topCategory(liked.map((m) => m.category));
+  const personality = top ? PERSONALITIES[top] : undefined;
+  const breakdown = categoryBreakdown(liked.map((m) => m.category));
+
+  if (statsLoading || likedLoading) {
     return (
       <AppShell>
         <div className="h-64 animate-pulse rounded-3xl bg-card" />
@@ -87,20 +85,20 @@ function MatchesPage() {
         </p>
         <p className="mt-3 text-5xl">{personality?.emoji}</p>
         <h1 className="mt-2 text-3xl font-bold sm:text-4xl">{personality?.title}</h1>
-        <p className="mt-2 font-display text-lg text-accent">{personality?.tagline}</p>
-        <p className="mx-auto mt-4 max-w-lg text-sm text-muted-foreground">
+        <p className="mt-2 text-sm font-semibold text-accent">{personality?.tagline}</p>
+        <p className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground">
           {personality?.description}
         </p>
       </section>
 
-      <section className="mt-8">
-        <h2 className="text-lg font-bold">Meme compatibility</h2>
+      <section className="mt-8 rounded-2xl border border-border bg-card p-5">
+        <h2 className="text-lg font-bold">Compatibility breakdown</h2>
         <ul className="mt-4 space-y-3">
           {breakdown.map((row) => (
             <li key={row.category}>
               <div className="mb-1 flex justify-between text-sm">
                 <span>{CATEGORY_LABELS[row.category] ?? row.category}</span>
-                <span className="text-muted-foreground">{row.percent}% match</span>
+                <span className="text-muted-foreground">{row.percent}%</span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-secondary">
                 <div className="h-full bg-primary" style={{ width: `${row.percent}%` }} />
@@ -110,17 +108,48 @@ function MatchesPage() {
         </ul>
       </section>
 
-      <section className="mt-10">
-        <h2 className="text-lg font-bold">Top memes you matched with</h2>
-        <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {likedMemes
-            .filter((m) => m.category === top)
-            .slice(0, 6)
-            .map((meme) => (
-              <div key={meme.id} className="aspect-[3/4]">
-                <MemeCard meme={meme} />
+      <section className="mt-8 rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center gap-2">
+          <Users className="size-5 text-accent" />
+          <h2 className="text-lg font-bold">People who laugh like you</h2>
+        </div>
+        {usersLoading && <p className="mt-3 text-sm text-muted-foreground">Looking for matches…</p>}
+        {!usersLoading && users.length === 0 && (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Nobody else has liked the same memes yet. Check back once more people swipe.
+          </p>
+        )}
+        <ul className="mt-4 space-y-3">
+          {users.map((u, i) => (
+            <li
+              key={u.device_id}
+              className="flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-3"
+            >
+              <div>
+                <p className="font-semibold">Swiper #{i + 1}</p>
+                <p className="text-xs text-muted-foreground">
+                  {u.shared_likes} shared like{u.shared_likes === 1 ? "" : "s"}
+                  {u.top_category
+                    ? ` · loves ${CATEGORY_LABELS[u.top_category] ?? u.top_category}`
+                    : ""}
+                </p>
               </div>
-            ))}
+              <span className="font-display text-xl font-bold text-primary">
+                {u.compatibility}%
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="mb-4 text-lg font-bold">Memes you loved</h2>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {liked.slice(0, 6).map((meme) => (
+            <div key={meme.id} className="aspect-[3/4]">
+              <MemeCard meme={meme} />
+            </div>
+          ))}
         </div>
       </section>
     </AppShell>

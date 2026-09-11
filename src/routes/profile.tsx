@@ -21,6 +21,8 @@ export const Route = createFileRoute("/profile")({
         property: "og:description",
         content: "See how many memes you swiped, liked, skipped and saved.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ProfilePage,

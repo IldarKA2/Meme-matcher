@@ -18,6 +18,8 @@ export const Route = createFileRoute("/saved")({
         property: "og:description",
         content: "Every meme you bookmarked while swiping, in one place.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: SavedPage,

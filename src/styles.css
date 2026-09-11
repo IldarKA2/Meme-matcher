@@ -32,6 +32,7 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-image-stage: var(--image-stage);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -71,6 +72,7 @@
   --destructive-foreground: oklch(0.98 0.005 90);
   --success: oklch(0.78 0.16 155);
   --success-foreground: oklch(0.17 0.02 285);
+  --image-stage: oklch(0.1 0.012 285);
   --border: oklch(0.32 0.026 285);
   --input: oklch(0.32 0.026 285);
   --ring: oklch(0.7 0.191 24);
@@ -117,12 +119,21 @@
   font-family: var(--font-display);
 }
 
-@utility meme-caption {
-  color: #fff;
-  text-shadow:
-    2px 2px 0 #000,
-    -2px 2px 0 #000,
-    2px -2px 0 #000,
-    -2px -2px 0 #000,
-    0 3px 8px rgba(0, 0, 0, 0.7);
+.deck-card-shadow {
+  box-shadow: 0 24px 60px color-mix(in oklab, var(--image-stage) 70%, transparent);
+}
+
+.deck-control-shadow {
+  box-shadow: 0 12px 28px color-mix(in oklab, var(--image-stage) 55%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

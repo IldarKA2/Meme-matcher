@@ -50,7 +50,9 @@ export function useDeck() {
     remaining: query.data?.remaining ?? 0,
     exhausted: Boolean(query.data?.exhausted),
     isLoading: !deviceId || query.isLoading,
+    isFetching: query.isFetching,
     error: query.error,
+    retry: query.refetch,
   };
 }
 

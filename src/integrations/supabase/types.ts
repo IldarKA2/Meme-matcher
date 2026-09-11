@@ -14,7 +14,97 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      memes: {
+        Row: {
+          bottom_text: string
+          category: string
+          created_at: string
+          id: string
+          image_url: string
+          language: string
+          top_text: string
+        }
+        Insert: {
+          bottom_text?: string
+          category?: string
+          created_at?: string
+          id?: string
+          image_url: string
+          language?: string
+          top_text?: string
+        }
+        Update: {
+          bottom_text?: string
+          category?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          language?: string
+          top_text?: string
+        }
+        Relationships: []
+      }
+      saved_memes: {
+        Row: {
+          created_at: string
+          device_id: string
+          id: string
+          meme_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          id?: string
+          meme_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          id?: string
+          meme_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_memes_meme_id_fkey"
+            columns: ["meme_id"]
+            isOneToOne: false
+            referencedRelation: "memes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      swipes: {
+        Row: {
+          action: string
+          created_at: string
+          device_id: string
+          id: string
+          meme_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          device_id: string
+          id?: string
+          meme_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          device_id?: string
+          id?: string
+          meme_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "swipes_meme_id_fkey"
+            columns: ["meme_id"]
+            isOneToOne: false
+            referencedRelation: "memes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

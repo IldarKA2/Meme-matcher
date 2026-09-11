@@ -196,6 +196,7 @@ export async function getMatchingUsers(deviceId: string, limit = 10): Promise<Ma
         device_id: otherDeviceId,
         sharedIds,
         shared_likes: sharedIds.length,
+        similarity: unionSize > 0 ? sharedIds.length / unionSize : 0,
         compatibility: unionSize > 0 ? Math.round((sharedIds.length / unionSize) * 100) : 0,
         likes_count: otherIds.size,
       };
@@ -203,7 +204,7 @@ export async function getMatchingUsers(deviceId: string, limit = 10): Promise<Ma
     .filter((match) => match.shared_likes > 0)
     .sort(
       (a, b) =>
-        b.compatibility - a.compatibility ||
+        b.similarity - a.similarity ||
         b.shared_likes - a.shared_likes ||
         a.device_id.localeCompare(b.device_id),
     )

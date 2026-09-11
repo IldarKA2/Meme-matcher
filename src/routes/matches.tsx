@@ -175,7 +175,7 @@ function MatchesPage() {
                     key={meme.id}
                     src={memeImageUrl(meme, 240)}
                     alt={meme.lines.join(" — ") || "Shared meme"}
-                    className="aspect-square min-w-0 flex-1 rounded-md border border-border object-cover"
+                    className="aspect-square min-w-0 flex-1 rounded-md border border-border bg-secondary object-contain"
                     loading="lazy"
                   />
                 ))}

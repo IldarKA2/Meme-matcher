@@ -2,12 +2,31 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type Meme = {
   id: string;
-  image_url: string;
-  top_text: string;
-  bottom_text: string;
+  template: string;
+  lines: string[];
   language: string;
   category: string;
 };
+
+function slug(text: string) {
+  const escaped = text
+    .replace(/_/g, "__")
+    .replace(/-/g, "--")
+    .replace(/ /g, "_")
+    .replace(/\?/g, "~q")
+    .replace(/%/g, "~p")
+    .replace(/#/g, "~h")
+    .replace(/\//g, "~s")
+    .replace(/"/g, "''");
+  return encodeURIComponent(escaped).replace(/%5F/g, "_").replace(/%7E/g, "~").replace(/%27/g, "'");
+}
+
+/** Pre-rendered meme image (captions burned into the picture). */
+export function memeImageUrl(meme: Meme, width = 600) {
+  const path = (meme.lines.length ? meme.lines : ["_"]).map(slug).join("/");
+  return `https://api.memegen.link/images/${meme.template}/${path}.png?width=${width}`;
+}
+
 
 export type Swipe = {
   meme_id: string;

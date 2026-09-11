@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as MatchesRouteImport } from './routes/matches'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SavedRouteImport } from './routes/saved'
+import { Route as ApiPublicMemeImageIdRouteImport } from './routes/api/public/meme-image/$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const SavedRoute = SavedRouteImport.update({
   path: '/saved',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicMemeImageIdRoute = ApiPublicMemeImageIdRouteImport.update({
+  id: '/api/public/meme-image/$id',
+  path: '/api/public/meme-image/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/matches': typeof MatchesRoute
   '/profile': typeof ProfileRoute
   '/saved': typeof SavedRoute
+  '/api/public/meme-image/$id': typeof ApiPublicMemeImageIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/matches': typeof MatchesRoute
   '/profile': typeof ProfileRoute
   '/saved': typeof SavedRoute
+  '/api/public/meme-image/$id': typeof ApiPublicMemeImageIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,21 @@ export interface FileRoutesById {
   '/matches': typeof MatchesRoute
   '/profile': typeof ProfileRoute
   '/saved': typeof SavedRoute
+  '/api/public/meme-image/$id': typeof ApiPublicMemeImageIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/matches' | '/profile' | '/saved'
+  fullPaths:
+    '/' | '/matches' | '/profile' | '/saved' | '/api/public/meme-image/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/matches' | '/profile' | '/saved'
-  id: '__root__' | '/' | '/matches' | '/profile' | '/saved'
+  to: '/' | '/matches' | '/profile' | '/saved' | '/api/public/meme-image/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/matches'
+    | '/profile'
+    | '/saved'
+    | '/api/public/meme-image/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +83,7 @@ export interface RootRouteChildren {
   MatchesRoute: typeof MatchesRoute
   ProfileRoute: typeof ProfileRoute
   SavedRoute: typeof SavedRoute
+  ApiPublicMemeImageIdRoute: typeof ApiPublicMemeImageIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +116,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SavedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/meme-image/$id': {
+      id: '/api/public/meme-image/$id'
+      path: '/api/public/meme-image/$id'
+      fullPath: '/api/public/meme-image/$id'
+      preLoaderRoute: typeof ApiPublicMemeImageIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +131,7 @@ const rootRouteChildren: RootRouteChildren = {
   MatchesRoute: MatchesRoute,
   ProfileRoute: ProfileRoute,
   SavedRoute: SavedRoute,
+  ApiPublicMemeImageIdRoute: ApiPublicMemeImageIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

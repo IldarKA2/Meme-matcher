@@ -25,6 +25,8 @@ export const Route = createFileRoute("/matches")({
         property: "og:description",
         content: "Like 10 memes to unlock your meme compatibility personality and top matches.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: MatchesPage,

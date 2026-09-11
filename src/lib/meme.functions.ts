@@ -144,17 +144,16 @@ export const getMatchingUsers = createServerFn({ method: "GET" })
     return { users: await findMatches(data.deviceId) };
   });
 
-/** POST clear all swipes and saves for this device. */
+/** POST clear swipe history for this device while preserving saved memes. */
 export const resetHistory = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => deviceSchema.parse(data))
   .handler(async ({ data }) => {
     const { recalculateStatistics } = await import("./meme.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const a = await supabaseAdmin.from("swipes").delete().eq("device_id", data.deviceId);
-    const b = await supabaseAdmin.from("saved_memes").delete().eq("device_id", data.deviceId);
-    if (a.error || b.error) {
-      console.error("[resetHistory]", a.error?.message ?? b.error?.message);
+    const { error } = await supabaseAdmin.from("swipes").delete().eq("device_id", data.deviceId);
+    if (error) {
+      console.error("[resetHistory]", error.message);
       throw new Error("Could not reset your history. Please try again.");
     }
     return { statistics: await recalculateStatistics(data.deviceId) };

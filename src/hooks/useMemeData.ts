@@ -108,5 +108,12 @@ export function useMatchingUsers(enabled: boolean) {
     queryFn: () => getMatchingUsers({ data: { deviceId } }),
     enabled: Boolean(deviceId) && enabled,
   });
-  return { users: query.data?.users ?? [], isLoading: query.isLoading };
+  return {
+    users: query.data?.users ?? [],
+    unlocked: query.data?.unlocked ?? false,
+    currentLikes: query.data?.currentLikes ?? 0,
+    likesRequired: query.data?.likesRequired ?? 10,
+    isLoading: query.isLoading,
+    error: query.error,
+  };
 }

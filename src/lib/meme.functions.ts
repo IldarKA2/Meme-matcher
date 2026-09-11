@@ -140,8 +140,26 @@ export const getLikedMemes = createServerFn({ method: "GET" })
 export const getMatchingUsers = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => deviceSchema.parse(data))
   .handler(async ({ data }) => {
-    const { getMatchingUsers: findMatches } = await import("./meme.server");
-    return { users: await findMatches(data.deviceId) };
+    const { getMatchingUsers: findMatches, readStatistics, touchUser } = await import(
+      "./meme.server"
+    );
+    await touchUser(data.deviceId);
+    const statistics = await readStatistics(data.deviceId);
+    const likesRequired = 10;
+    if (statistics.likes_count < likesRequired) {
+      return {
+        unlocked: false,
+        currentLikes: statistics.likes_count,
+        likesRequired,
+        users: [],
+      };
+    }
+    return {
+      unlocked: true,
+      currentLikes: statistics.likes_count,
+      likesRequired,
+      users: await findMatches(data.deviceId),
+    };
   });
 
 /** POST clear swipe history for this device while preserving saved memes. */

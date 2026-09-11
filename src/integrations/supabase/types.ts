@@ -16,31 +16,28 @@ export type Database = {
     Tables: {
       memes: {
         Row: {
-          bottom_text: string
           category: string
           created_at: string
           id: string
-          image_url: string
           language: string
-          top_text: string
+          lines: string[]
+          template: string
         }
         Insert: {
-          bottom_text?: string
           category?: string
           created_at?: string
           id?: string
-          image_url: string
           language?: string
-          top_text?: string
+          lines?: string[]
+          template?: string
         }
         Update: {
-          bottom_text?: string
           category?: string
           created_at?: string
           id?: string
-          image_url?: string
           language?: string
-          top_text?: string
+          lines?: string[]
+          template?: string
         }
         Relationships: []
       }

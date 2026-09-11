@@ -1,5 +1,6 @@
 # Roadmap
 
-- [x] Polish swipe gestures, transitions, controls, and saved toggle state
-- [x] Add loading, retryable error, and finished-deck actions
-- [x] Verify desktop and mobile behavior
+- [ ] Enforce the 10-like match lock on the server
+- [ ] Compute exact deterministic Jaccard matches with shared meme records
+- [ ] Display sorted match cards with avatars and meme previews
+- [ ] Add a no-match fallback and verify locked/unlocked behavior

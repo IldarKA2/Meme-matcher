@@ -21,6 +21,7 @@ export type MatchingUser = {
   compatibility: number;
   top_category: string | null;
   likes_count: number;
+  shared_memes: Meme[];
 };
 
 /**

@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Lock, Users } from "lucide-react";
+import { ArrowRight, Lock, Share2, Users } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { MemeCard } from "@/components/MemeCard";
+import { Button } from "@/components/ui/button";
 import { useLikedMemes, useMatchingUsers, useStatistics } from "@/hooks/useMemeData";
+import { memeImageUrl } from "@/lib/meme-api";
 import {
   CATEGORY_LABELS,
   LIKES_TO_MATCH,
@@ -39,6 +41,19 @@ function MatchesPage() {
   const likeCount = stats.likes_count;
   const unlocked = likeCount >= LIKES_TO_MATCH;
   const { users, isLoading: usersLoading } = useMatchingUsers(unlocked);
+
+  const inviteFriends = async () => {
+    const invitation = {
+      title: "Meme Tinder",
+      text: "Swipe some memes and compare your humor match with me.",
+      url: window.location.origin,
+    };
+    if (navigator.share) {
+      await navigator.share(invitation).catch(() => undefined);
+      return;
+    }
+    await navigator.clipboard.writeText(window.location.origin).catch(() => undefined);
+  };
 
   const top = stats.top_category ?? topCategory(liked.map((m) => m.category));
   const personality = top ? PERSONALITIES[top] : undefined;
@@ -93,7 +108,7 @@ function MatchesPage() {
         </p>
       </section>
 
-      <section className="mt-8 rounded-2xl border border-border bg-card p-5">
+      <section className="mt-8">
         <h2 className="text-lg font-bold">Compatibility breakdown</h2>
         <ul className="mt-4 space-y-3">
           {breakdown.map((row) => (
@@ -117,28 +132,62 @@ function MatchesPage() {
         </div>
         {usersLoading && <p className="mt-3 text-sm text-muted-foreground">Looking for matches…</p>}
         {!usersLoading && users.length === 0 && (
-          <p className="mt-3 text-sm text-muted-foreground">
-            Nobody else has liked the same memes yet. Check back once more people swipe.
-          </p>
+          <div className="mt-4 rounded-xl border border-dashed border-border bg-card p-6 text-center">
+            <p className="font-semibold">Your humor twin is still out there</p>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+              Nobody shares your favorites yet. Keep swiping or invite friends to compare tastes.
+            </p>
+            <div className="mt-5 flex flex-wrap justify-center gap-3">
+              <Button asChild>
+                <Link to="/">Keep swiping <ArrowRight /></Link>
+              </Button>
+              <Button variant="outline" onClick={inviteFriends}>
+                <Share2 /> Invite friends
+              </Button>
+            </div>
+          </div>
         )}
-        <ul className="mt-4 space-y-3">
+        <ul className="mt-4 grid gap-4 sm:grid-cols-2">
           {users.map((u, i) => (
             <li
               key={u.device_id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-3"
+              className="rounded-xl border border-border bg-card p-4"
             >
-              <div>
-                <p className="font-semibold">Swiper #{i + 1}</p>
-                <p className="text-xs text-muted-foreground">
-                  {u.shared_likes} shared like{u.shared_likes === 1 ? "" : "s"}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary font-display text-sm font-bold text-secondary-foreground">
+                    {u.device_id.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">Meme fan {u.device_id.slice(-4)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {u.shared_likes} shared favorite{u.shared_likes === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                </div>
+                <span className="shrink-0 rounded-full bg-primary/15 px-3 py-1 text-sm font-bold text-primary">
+                  {u.compatibility}% Match
+                </span>
+              </div>
+              <div className="mt-4 flex gap-2" aria-label="Shared favorite memes">
+                {u.shared_memes.slice(0, 3).map((meme) => (
+                  <img
+                    key={meme.id}
+                    src={memeImageUrl(meme, 240)}
+                    alt={meme.lines.join(" — ") || "Shared meme"}
+                    className="aspect-square min-w-0 flex-1 rounded-md border border-border object-cover"
+                    loading="lazy"
+                  />
+                ))}
+              </div>
+              {u.top_category && (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Loves {CATEGORY_LABELS[u.top_category] ?? u.top_category}
                   {u.top_category
-                    ? ` · loves ${CATEGORY_LABELS[u.top_category] ?? u.top_category}`
+                    ? " humor"
                     : ""}
                 </p>
-              </div>
-              <span className="font-display text-xl font-bold text-primary">
-                {u.compatibility}%
-              </span>
+              )}
             </li>
           ))}
         </ul>

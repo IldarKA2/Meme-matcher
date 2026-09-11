@@ -156,9 +156,10 @@ export type MatchingUser = {
   compatibility: number;
   top_category: string | null;
   likes_count: number;
+  shared_memes: MemeRow[];
 };
 
-/** Other devices whose likes overlap with this one. */
+/** Other devices whose likes overlap with this one, scored with exact Jaccard similarity. */
 export async function getMatchingUsers(deviceId: string, limit = 10): Promise<MatchingUser[]> {
   const { data: myLikes, error: myError } = await supabaseAdmin
     .from("swipes")
@@ -167,49 +168,80 @@ export async function getMatchingUsers(deviceId: string, limit = 10): Promise<Ma
     .eq("action", "like");
   if (myError) fail("Could not read your likes", myError);
 
-  const myIds = (myLikes ?? []).map((r) => r.meme_id as string);
-  if (myIds.length === 0) return [];
+  const myIds = [...new Set((myLikes ?? []).map((r) => r.meme_id as string))];
+  if (myIds.length < 10) return [];
 
   const { data: others, error: othersError } = await supabaseAdmin
     .from("swipes")
     .select("device_id, meme_id")
     .eq("action", "like")
-    .in("meme_id", myIds)
     .neq("device_id", deviceId);
   if (othersError) fail("Could not find matching users", othersError);
 
-  const shared = new Map<string, number>();
+  const likesByDevice = new Map<string, Set<string>>();
   for (const row of others ?? []) {
     const d = row.device_id as string;
-    shared.set(d, (shared.get(d) ?? 0) + 1);
+    const likedIds = likesByDevice.get(d) ?? new Set<string>();
+    likedIds.add(row.meme_id as string);
+    likesByDevice.set(d, likedIds);
   }
-  if (shared.size === 0) return [];
+  if (likesByDevice.size === 0) return [];
 
-  const { data: statRows, error: statError } = await supabaseAdmin
-    .from("user_statistics")
-    .select("device_id, top_category, likes_count")
-    .in("device_id", [...shared.keys()]);
-  if (statError) fail("Could not load matching profiles", statError);
-
-  const statsByDevice = new Map(
-    (statRows ?? []).map((r) => [
-      r.device_id as string,
-      { top_category: r.top_category as string | null, likes_count: r.likes_count as number },
-    ]),
-  );
-
-  return [...shared.entries()]
-    .map(([device, count]) => {
-      const s = statsByDevice.get(device);
-      const union = myIds.length + (s?.likes_count ?? count) - count;
+  const mySet = new Set(myIds);
+  const scored = [...likesByDevice.entries()]
+    .map(([otherDeviceId, otherIds]) => {
+      const sharedIds = [...otherIds].filter((id) => mySet.has(id));
+      const unionSize = new Set([...myIds, ...otherIds]).size;
       return {
-        device_id: device,
-        shared_likes: count,
-        compatibility: union > 0 ? Math.round((count / union) * 100) : 0,
-        top_category: s?.top_category ?? null,
-        likes_count: s?.likes_count ?? count,
+        device_id: otherDeviceId,
+        sharedIds,
+        shared_likes: sharedIds.length,
+        compatibility: unionSize > 0 ? Math.round((sharedIds.length / unionSize) * 100) : 0,
+        likes_count: otherIds.size,
       };
     })
-    .sort((a, b) => b.compatibility - a.compatibility || b.shared_likes - a.shared_likes)
+    .filter((match) => match.shared_likes > 0)
+    .sort(
+      (a, b) =>
+        b.compatibility - a.compatibility ||
+        b.shared_likes - a.shared_likes ||
+        a.device_id.localeCompare(b.device_id),
+    )
     .slice(0, limit);
+  if (scored.length === 0) return [];
+
+  const sharedMemeIds = [...new Set(scored.flatMap((match) => match.sharedIds))];
+  const [statsResult, memesResult] = await Promise.all([
+    supabaseAdmin
+      .from("user_statistics")
+      .select("device_id, top_category")
+      .in("device_id", scored.map((match) => match.device_id)),
+    supabaseAdmin
+      .from("memes")
+      .select("id, template, lines, language, category")
+      .in("id", sharedMemeIds),
+  ]);
+  if (statsResult.error) fail("Could not load matching profiles", statsResult.error);
+  if (memesResult.error) fail("Could not load shared memes", memesResult.error);
+
+  const statsByDevice = new Map(
+    (statsResult.data ?? []).map((r) => [
+      r.device_id as string,
+      r.top_category as string | null,
+    ]),
+  );
+  const memesById = new Map(
+    ((memesResult.data ?? []) as MemeRow[]).map((meme) => [meme.id, meme]),
+  );
+
+  return scored.map((match) => ({
+    device_id: match.device_id,
+    shared_likes: match.shared_likes,
+    compatibility: match.compatibility,
+    top_category: statsByDevice.get(match.device_id) ?? null,
+    likes_count: match.likes_count,
+    shared_memes: match.sharedIds
+      .map((id) => memesById.get(id))
+      .filter((meme): meme is MemeRow => Boolean(meme)),
+  }));
 }

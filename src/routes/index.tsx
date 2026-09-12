@@ -87,6 +87,12 @@ function SwipePage() {
     setSaveOverride(null);
   }, [current?.id]);
 
+  // Only pull the next batch once the local queue is fully used up.
+  useEffect(() => {
+    if (!deviceId || isLoading || isFetching || error || exhausted) return;
+    if (queue.length === 0 && consumed.length > 0) void retry();
+  }, [consumed.length, deviceId, error, exhausted, isFetching, isLoading, queue.length, retry]);
+
   const commit = useCallback(
     (meme: Meme, action: "like" | "dislike") => {
       if (!deviceId || exit) return;

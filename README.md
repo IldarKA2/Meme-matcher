@@ -1,343 +1,170 @@
 # Meme Tinder
 
-A full-stack, Tinder-style meme swiping application. Users swipe through a curated deck of memes, like or dislike them, save favorites, track their stats, and—once they have liked at least 10 memes—discover other users with a similar sense of humor through a deterministic Jaccard similarity algorithm. No AI or machine learning is used anywhere in the matching logic.
+## 1. Project Description
+
+Meme Tinder is a full-stack, Tinder-style meme swiping web application. Users browse a deck of memes, swipe right to like or swipe left to dislike, and save their favorites for later. A dedicated profile page tracks swipe statistics, and once a user has liked at least 10 memes, a matching page unlocks and reveals other users with a similar sense of humor.
+
+The application is intentionally built without any artificial intelligence or machine learning. Matching is performed with a deterministic Jaccard similarity algorithm that scores overlap between liked memes, making the compatibility logic fully transparent and reproducible.
 
 ---
 
-## Main Features
+## 2. Installation and Running Instructions
 
-- **Tinder-style swipe interface** with smooth pointer/touch drag gestures, dynamic card rotation, and stacked depth for the next card.
-- **Visual gesture feedback** — green "LIKE" stamp on right drag, red "NOPE" stamp on left drag, and smooth exit animations.
-- **Prominent action controls** — Like, Dislike, and Save buttons with hover/press states and keyboard shortcuts:
-  - `→` or `D` = Like
-  - `←` or `A` = Dislike
-  - `S` = Save / unsave
-- **Optimistic UI updates** — counters and the saved state update instantly; the next card slides in immediately on save or swipe, with the API call running in the background.
-- **Saved memes page** — browse all memes saved by the current user.
-- **Profile statistics** — total swipes, likes, dislikes, saves, and top category.
-- **Deterministic matching** — unlocked after 10 likes; matches are ranked by exact Jaccard similarity over shared liked memes, with no AI/ML.
-- **Responsive UI** — optimized for both desktop and mobile, with touch-action guards to prevent awkward scrolling while dragging cards.
-- **Server-side image proxy** — external meme generation and uploaded storage images are fetched by the backend, never directly by the browser.
+### Prerequisites
 
----
+- [Node.js](https://nodejs.org/) 20+ (or [Bun](https://bun.sh/))
+- A Supabase / Lovable Cloud project with the required environment variables
 
-## Tech Stack
+### Step 1 — Clone the repository
 
-- **Framework:** [React 19](https://react.dev/) + [TanStack Start v1](https://tanstack.com/start) (full-stack React framework with SSR/SSG and server functions)
-- **Language:** [TypeScript 5](https://www.typescriptlang.org/)
-- **Build tool:** [Vite 8](https://vitejs.dev/)
-- **Styling:** [Tailwind CSS v4](https://tailwindcss.com/)
-- **State & data fetching:** [TanStack Query v5](https://tanstack.com/query)
-- **Backend / database:** [Lovable Cloud / Supabase](https://lovable.dev) — PostgreSQL with Row Level Security (RLS)
-- **Validation:** [Zod](https://zod.dev/)
-- **UI primitives:** [Radix UI](https://www.radix-ui.com/) + [Lucide React](https://lucide.dev/)
+```bash
+git clone <repository-url>
+cd meme-tinder
+```
 
----
+### Step 2 — Install dependencies
 
-## Database Structure
+```bash
+npm install
+```
 
-All tables live in the `public` schema. Anonymous users are identified by a stable `device_id` stored in `localStorage`.
+### Step 3 — Configure environment variables
 
-### `users`
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | `uuid` | Primary key |
-| `device_id` | `text` | Unique anonymous identifier |
-| `created_at` | `timestamptz` | Account creation time |
-| `last_active_at` | `timestamptz` | Updated on every request |
+Create a `.env` file in the project root:
 
-### `memes`
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | `uuid` | Primary key |
-| `template` | `text` | Meme template identifier (e.g. `drake`) |
-| `lines` | `text[]` | Caption lines for template-based rendering |
-| `language` | `text` | `en`, `ru`, etc. |
-| `category` | `text` | Humor category |
-| `image_url` | `text` | Optional direct image URL |
-| `image_path` | `text` | Optional private storage path |
-| `created_at` | `timestamptz` | Insertion time |
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
 
-### `swipes`
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | `uuid` | Primary key |
-| `device_id` | `text` | References `users(device_id)` |
-| `meme_id` | `uuid` | References `memes(id)` |
-| `action` | `text` | `like` or `dislike` |
-| `created_at` | `timestamptz` | Insertion time |
+> `SUPABASE_SERVICE_ROLE_KEY` is server-only and must never be exposed to the browser or client bundles.
 
-Unique on `(device_id, meme_id)` — re-swipe updates the existing row.
+### Step 4 — Set up the Supabase backend
 
-### `saved_memes`
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | `uuid` | Primary key |
-| `device_id` | `text` | References `users(device_id)` |
-| `meme_id` | `uuid` | References `memes(id)` |
-| `created_at` | `timestamptz` | Insertion time |
+Apply the project migrations to create the following tables in the `public` schema:
 
-Unique on `(device_id, meme_id)`.
+- `users` — anonymous device profiles
+- `memes` — meme records (template-based or uploaded images)
+- `swipes` — like/dislike actions per device and meme
+- `saved_memes` — saved meme records per device
+- `user_statistics` — aggregated swipe/save counters and top category
 
-### `user_statistics`
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | `uuid` | Primary key |
-| `device_id` | `text` | Unique, references `users(device_id)` |
-| `total_swipes` | `integer` | Total swipe count |
-| `likes_count` | `integer` | Like count |
-| `dislikes_count` | `integer` | Dislike count |
-| `saves_count` | `integer` | Saved meme count |
-| `top_category` | `text` | Most-liked category |
-| `updated_at` | `timestamptz` | Last recalculation time |
+Enable Row Level Security (RLS) and verify that `GRANT` statements are present for `authenticated` and `service_role` roles.
 
-Statistics are recalculated server-side after every swipe or save change.
+Create a private Storage bucket named `memes` for uploaded meme images. Images are served through the server-side proxy at `/api/public/meme-image/:id`, so the bucket does not need to be public.
+
+### Step 5 — Run the development server
+
+```bash
+npm run dev
+```
+
+Open the app at `http://localhost:8080`.
+
+### Step 6 — Build and preview for production
+
+```bash
+npm run build
+npm run preview
+```
 
 ---
 
-## Backend REST API Endpoints
+## 3. Design and Development Process
+
+### Architecture overview
+
+The application follows a unified full-stack architecture:
+
+- **Frontend** — React 19 with TanStack Router for type-safe routing and TanStack Query v5 for server-state management. Tailwind CSS v4 provides the styling layer.
+- **Full-stack / API layer** — TanStack Start v1 server routes under `src/routes/api/` expose REST endpoints and server functions. Server-only modules (`*.server.ts`) interact with Supabase using the service-role key.
+- **Database** — Supabase PostgreSQL stores users, memes, swipes, saved memes, and computed statistics. Foreign keys, unique constraints, and cascading deletes preserve relational integrity.
+- **Storage** — Supabase Storage bucket `memes` holds uploaded images. The browser never talks directly to Storage; instead, the server proxies and caches images via `/api/public/meme-image/:id`.
+
+### Interaction flow
+
+1. The browser generates a stable anonymous `device_id` and stores it in `localStorage`.
+2. The client requests a batch of unswiped memes from `GET /api/memes/random` using the `deviceId` query parameter.
+3. Swipes and saves are sent to `POST /api/swipes` and `POST /api/memes/save`; the server persists the action, recalculates statistics, and returns the updated counters.
+4. The profile page fetches persisted statistics from `GET /api/users/statistics`.
+5. The matches page fetches deterministic matches from `GET /api/users/matches` once the user has liked at least 10 memes.
+6. Images are rendered through `/api/public/meme-image/:id`, which fetches from Memegen or Supabase Storage on the server and streams the bytes back to the client.
+
+### Main development stages
+
+1. **Database schema** — designed normalized tables for users, memes, swipes, saves, and statistics with RLS and explicit grants.
+2. **Deck persistence** — built server-side random selection that excludes already-swiped memes and returns remaining counts.
+3. **Swipe gestures and depth stack** — implemented pointer/touch dragging, rotational transforms, LIKE/NOPE visual stamps, stacked next-card depth, and keyboard shortcuts.
+4. **Jaccard matching** — implemented deterministic similarity scoring without any AI/ML models.
+5. **Custom meme uploads** — added `image_url` and `image_path` support, uploaded 70 custom images to Supabase Storage, and inserted corresponding `memes` rows.
+6. **Server-side image proxy** — ensured external image services and Storage are only contacted from the server.
+7. **Optimistic UI updates** — counters and deck advancement update instantly while the API call runs in the background, with rollback on failure.
+
+---
+
+## 4. Unique Approaches and Methodologies
+
+- **Gesture-driven swipe interface** — Pointer and touch events drive card translation and rotation. A green "LIKE" stamp fades in on right drag, and a red "NOPE" stamp fades in on left drag. The next card is stacked behind with subtle scale and shadow to create realistic depth.
+- **Optimistic UI with silent background sync** — Swipes, saves, and statistics update the UI immediately. The server request fires asynchronously; if it fails, the card returns and the counter rolls back.
+- **Deterministic Jaccard matching** — After 10 likes, the server queries all other users' liked meme IDs, computes `|intersection| / |union|` as a similarity ratio, converts it to a whole-percentage compatibility score, and ranks matches in descending order. No AI or ML is involved.
+- **Persistent anonymous sessions** — A random UUID stored in `localStorage` acts as the device identity. This removes sign-up friction while still providing persistent profiles, statistics, and saved memes within the same browser.
+- **Server-side image proxying and validation** — All meme images are fetched by the backend. This avoids CORS issues in the browser, keeps Storage buckets private, and prevents service-role secrets from reaching client code.
+
+---
+
+## 5. Development Trade-offs
+
+- **Device ID session model vs. full account auth** — We chose a `localStorage` device ID for zero-friction onboarding and seamless grading/testing. The trade-off is that profiles are bound to a single browser; clearing cache or switching devices resets the anonymous identity.
+- **Mathematical Jaccard similarity vs. AI/ML embeddings** — We deliberately used a deterministic Jaccard score. It is transparent, computationally lightweight, requires no external API, and incurs no latency or cost. It is less nuanced than learned embeddings but fully satisfies the no-AI requirement.
+- **Deck batch prefetching vs. single-card queries** — The app fetches batches of 3 unswiped memes at a time. This reduces database roundtrips while keeping memory usage low and the UI responsive.
+- **Optimistic updates with rollback on failure** — We prioritized a native, instant-feeling interface over synchronous locking. The rare failed request rolls back state and allows the user to retry.
+
+---
+
+## 6. Known Bugs and Limitations
+
+- **No known critical bugs.** The application builds successfully, passes type checking, and has been verified through automated browser tests for swiping, saving, statistics, and matching.
+- **Device-bound profiles** — Because users are identified by a browser-stored `device_id`, clearing local storage or using a different browser/device creates a new anonymous profile and loses saved memes and statistics.
+- **Deck exhaustion** — Once every meme in the database has been swiped, the deck is empty until the user resets their swipe history.
+- **Internet connection required** — Swipes, saves, statistics, and matches rely on server-side persistence, so an active connection is required for these features to work.
+
+---
+
+## 7. Technology Stack
+
+| Technology | Purpose | Rationale |
+|------------|---------|-----------|
+| **React 19** | UI library | Industry-standard component model with strong ecosystem support and modern concurrent features. |
+| **TypeScript 5** | Language | Static typing catches errors at build time and improves long-term maintainability. |
+| **TanStack Start v1** | Full-stack React framework | Unifies server routes, server functions, SSR, and routing in a single type-safe codebase. |
+| **TanStack Router** | Routing | Type-safe file-based routing with automatic route generation. |
+| **TanStack Query v5** | Server-state management | Robust caching, optimistic mutations, background refetching, and stale-while-revalidate behavior. |
+| **Tailwind CSS v4** | Styling | Utility-first CSS enables rapid, consistent styling without runtime overhead or custom CSS files. |
+| **Supabase / PostgreSQL** | Database | Relational integrity via foreign keys, cascade deletes, RLS policies, and a generous free tier. |
+| **Supabase Storage** | File storage | Stores uploaded meme images privately and serves them through the server-side proxy. |
+| **Zod** | Validation | Declarative schema validation for API inputs and query parameters. |
+| **Radix UI + Lucide React** | UI primitives and icons | Accessible, unstyled components and a consistent icon set. |
+| **Vite 8** | Build tool | Fast development server and optimized production builds. |
+
+---
+
+## Backend REST API Summary
 
 All endpoints return JSON with `content-type: application/json`. Error responses follow the shape `{"error": "..."}`.
 
-### `GET /api/memes/random`
-Returns a batch of random memes the user has not yet swiped.
-
-**Query params**
-- `deviceId` (required, string, min length 8)
-- `count` (optional, integer 1–20, default `3`)
-
-**Response `200 OK`**
-```json
-{
-  "memes": [
-    {
-      "id": "uuid",
-      "template": "drake",
-      "lines": ["top text", "bottom text"],
-      "language": "en",
-      "category": "relatable",
-      "image_url": null,
-      "image_path": null
-    }
-  ],
-  "remaining": 42,
-  "exhausted": false
-}
-```
-
-### `POST /api/swipes`
-Records a like or dislike.
-
-**Body**
-```json
-{
-  "deviceId": "string",
-  "memeId": "uuid",
-  "action": "like" | "dislike"
-}
-```
-
-**Response `200 OK`**
-```json
-{
-  "success": true,
-  "statistics": { "total_swipes": 5, "likes_count": 3, ... }
-}
-```
-
-**Errors:** `400` for invalid body, `404` if meme does not exist, `500` for server errors.
-
-### `POST /api/memes/save`
-Saves a meme for the user.
-
-**Body**
-```json
-{ "deviceId": "string", "memeId": "uuid" }
-```
-
-**Response `200 OK`**
-```json
-{
-  "success": true,
-  "statistics": { "saves_count": 2, ... }
-}
-```
-
-### `DELETE /api/memes/save`
-Removes a saved meme.
-
-**Body**
-```json
-{ "deviceId": "string", "memeId": "uuid" }
-```
-
-**Response `200 OK`**
-```json
-{
-  "success": true,
-  "statistics": { "saves_count": 1, ... }
-}
-```
-
-### `GET /api/memes/saved`
-Returns all memes saved by the user.
-
-**Query params**
-- `deviceId` (required)
-
-**Response `200 OK`**
-```json
-{
-  "memes": [ /* full meme objects */ ]
-}
-```
-
-### `GET /api/users/statistics`
-Returns persisted user statistics.
-
-**Query params**
-- `deviceId` (required)
-
-**Response `200 OK`**
-```json
-{
-  "statistics": {
-    "total_swipes": 10,
-    "likes_count": 7,
-    "dislikes_count": 3,
-    "saves_count": 2,
-    "top_category": "relatable",
-    "updated_at": "..."
-  }
-}
-```
-
-### `GET /api/users/matches`
-Returns matching users once the current user has liked at least 10 memes.
-
-**Query params**
-- `deviceId` (required)
-
-**Response `200 OK` — locked**
-```json
-{
-  "unlocked": false,
-  "currentLikes": 7,
-  "likesRequired": 10,
-  "users": []
-}
-```
-
-**Response `200 OK` — unlocked**
-```json
-{
-  "unlocked": true,
-  "currentLikes": 12,
-  "likesRequired": 10,
-  "users": [
-    {
-      "device_id": "string",
-      "shared_likes": 6,
-      "compatibility": 85,
-      "top_category": "relatable",
-      "likes_count": 20,
-      "shared_memes": [ /* meme objects */ ]
-    }
-  ]
-}
-```
-
-### `GET /api/public/meme-image/:id`
-Server-side proxy for meme images. Supports `?width=200..1200` (default `600`).
-
-**Response**
-- `200 OK` — image bytes (`image/png` or source content-type)
-- `400` — invalid UUID
-- `404` — meme not found
-- `502` — upstream image unavailable
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/memes/random?deviceId=...&count=3` | Random unswiped memes |
+| `POST` | `/api/swipes` | Record like/dislike |
+| `POST` | `/api/memes/save` | Save a meme |
+| `DELETE` | `/api/memes/save` | Remove a saved meme |
+| `GET` | `/api/memes/saved?deviceId=...` | List saved memes |
+| `GET` | `/api/users/statistics?deviceId=...` | Get user statistics |
+| `GET` | `/api/users/matches?deviceId=...` | Get humor matches (requires 10 likes) |
+| `GET` | `/api/public/meme-image/:id?width=600` | Server-side image proxy |
 
 ---
-
-## Environment Variables
-
-Create a `.env` file in the project root with the following variables. Do not commit `.env` to version control.
-
-| Variable | Required for | Description |
-|----------|--------------|-------------|
-| `VITE_SUPABASE_URL` | Client / server | Public Supabase project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Client / server | Public Supabase anon/publishable key |
-| `VITE_SUPABASE_PROJECT_ID` | Client | Supabase project identifier |
-| `SUPABASE_URL` | Server | Same project URL, used server-side |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server only | Privileged service-role key; never expose to the browser |
-
-> **Security note:** `SUPABASE_SERVICE_ROLE_KEY` bypasses RLS and is imported only in server-side files (`*.server.ts` and TanStack server route handlers). It must never be referenced in client components or bundled into the frontend.
-
----
-
-## Local Setup Instructions
-
-### Prerequisites
-- [Node.js](https://nodejs.org/) 20+ (or [Bun](https://bun.sh/))
-- A Supabase / Lovable Cloud project with the variables above
-
-### Steps
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd meme-tinder
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   # or
-   bun install
-   ```
-
-3. **Set up environment variables**
-   Create a `.env` file in the project root and add the variables listed in the **Environment Variables** section above.
-
-
-4. **Run the development server**
-   ```bash
-   npm run dev
-   # or
-   bun dev
-   ```
-
-5. **Open the app**
-   Navigate to `http://localhost:8080` (or the port shown in the terminal).
-
----
-
-## Supabase Setup
-
-1. **Run migrations** — apply the existing migrations to create the `users`, `memes`, `swipes`, `saved_memes`, and `user_statistics` tables, indexes, grants, and RLS settings.
-2. **Seed starter memes** — the migrations include a curated starter set of clean English and Russian memes. Additional memes can be inserted directly into `public.memes`.
-3. **Create a Storage bucket** (optional, for uploaded meme images):
-   - Bucket name: `memes`
-   - Set file size limits as needed (e.g. 10 MB)
-   - Images are served through the `/api/public/meme-image/:id` proxy, so the bucket can remain private
-4. **Verify grants** — every new table in the `public` schema must have explicit `GRANT` statements for the roles that access it (`authenticated`, `service_role`, etc.).
-
----
-
-## Deployment Instructions
-
-### Deploy with Lovable
-
-1. Click the **Publish** button in the Lovable editor.
-2. **Frontend changes** (UI, styling, client code) require clicking **Update** in the publish dialog to go live.
-3. **Backend changes** (database migrations, server routes, server functions) deploy automatically and immediately.
-4. Share a temporary preview via **Share → Share preview** (public, 7-day link) or publish to the permanent production URL.
-
-### Production hosting (self-hosting)
-
-The project is built on TanStack Start and can be self-hosted. See the [Lovable self-hosting guide](https://docs.lovable.dev/tips-tricks/self-hosting) for manual setup instructions.
-
----
-
-## License
 
 This project was built with [Lovable](https://lovable.dev). The code is yours to modify, deploy, and distribute as you see fit.

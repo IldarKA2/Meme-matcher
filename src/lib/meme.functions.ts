@@ -91,7 +91,7 @@ export const getSavedMemes = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("saved_memes")
-      .select("created_at, memes ( id, template, lines, language, category )")
+      .select("created_at, memes ( id, template, lines, language, category, image_url, image_path )")
       .eq("device_id", data.deviceId)
       .order("created_at", { ascending: false });
     if (error) {
@@ -121,7 +121,7 @@ export const getLikedMemes = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("swipes")
-      .select("created_at, memes ( id, template, lines, language, category )")
+      .select("created_at, memes ( id, template, lines, language, category, image_url, image_path )")
       .eq("device_id", data.deviceId)
       .eq("action", "like")
       .order("created_at", { ascending: true });

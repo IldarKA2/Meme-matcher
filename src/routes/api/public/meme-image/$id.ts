@@ -20,11 +20,12 @@ export const Route = createFileRoute("/api/public/meme-image/$id")({
           : 600;
 
         try {
-          const { getMemeById, upstreamImageUrl } = await import("@/lib/meme.server");
+          const { getMemeById, imageSource } = await import("@/lib/meme.server");
           const meme = await getMemeById(id);
           if (!meme) return new Response("Meme not found", { status: 404 });
 
-          const upstream = await fetch(upstreamImageUrl(meme, width));
+          const source = imageSource(meme, width);
+          const upstream = await fetch(source.url, { headers: source.headers });
           if (!upstream.ok || !upstream.body) {
             console.error("[meme-image] upstream returned", upstream.status);
             return new Response("Image temporarily unavailable", { status: 502 });

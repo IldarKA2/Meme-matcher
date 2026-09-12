@@ -4,6 +4,8 @@ export type Meme = {
   lines: string[];
   language: string;
   category: string;
+  image_url?: string | null;
+  image_path?: string | null;
 };
 
 export type UserStatistics = {

@@ -12,7 +12,7 @@ export function MemeCard({ meme, className }: { meme: Meme; className?: string }
       <div className="relative flex-1 overflow-hidden bg-image-stage">
         <img
           src={memeImageUrl(meme)}
-          alt={meme.lines.join(" — ") || "Meme"}
+          alt={meme.lines.join(" — ") || `Meme from the ${meme.category} collection`}
           draggable={false}
           loading="lazy"
           className="h-full w-full object-contain select-none"

@@ -9,6 +9,7 @@ import { MemeCard } from "@/components/MemeCard";
 import { Button } from "@/components/ui/button";
 import {
   useDeck,
+  useOptimisticStats,
   useRefreshMemeData,
   useSavedMemes,
   useStatistics,

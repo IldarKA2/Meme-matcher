@@ -123,24 +123,35 @@ function SwipePage() {
     if (!current || !deviceId || isSaving) return;
     const meme = current;
     const nextSaved = !isSaved;
-    setIsSaving(true);
     setSaveOverride(nextSaved);
     const rollback = bumpStats({ saves_count: nextSaved ? 1 : -1 });
-    const mutation = nextSaved ? saveFn : unsaveFn;
-    void mutation({ data: { deviceId, memeId: meme.id } })
+    if (nextSaved) {
+      // Optimistic advance: slide to the next card immediately, save in background.
+      setConsumed((c) => [...c, meme.id]);
+      setDrag(0);
+      dragRef.current = 0;
+      void saveFn({ data: { deviceId, memeId: meme.id } })
+        .then(() => {
+          refresh();
+          toast.success("Saved to your collection");
+        })
+        .catch((e: unknown) => {
+          rollback();
+          // Bring the card back so the user can retry.
+          setConsumed((c) => c.filter((id) => id !== meme.id));
+          toast.error(e instanceof Error ? e.message : "Couldn't save that meme.");
+        });
+      return;
+    }
+    setIsSaving(true);
+    void unsaveFn({ data: { deviceId, memeId: meme.id } })
       .then(() => {
         refresh();
-        toast.success(nextSaved ? "Saved to your collection" : "Removed from saved");
-        if (nextSaved) {
-          // Saving consumes the card: advance to the next meme.
-          setConsumed((c) => [...c, meme.id]);
-          setDrag(0);
-          dragRef.current = 0;
-        }
+        toast.success("Removed from saved");
       })
       .catch((e: unknown) => {
         rollback();
-        setSaveOverride(!nextSaved);
+        setSaveOverride(true);
         toast.error(e instanceof Error ? e.message : "Couldn't update that meme.");
       })
       .finally(() => setIsSaving(false));

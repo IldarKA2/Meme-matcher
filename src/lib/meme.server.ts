@@ -55,7 +55,7 @@ export function upstreamImageUrl(meme: MemeRow, width: number) {
 export async function getMemeById(memeId: string): Promise<MemeRow | null> {
   const { data, error } = await supabaseAdmin
     .from("memes")
-    .select("id, template, lines, language, category")
+    .select("id, template, lines, language, category, image_url, image_path")
     .eq("id", memeId)
     .maybeSingle();
   if (error) fail("Could not load that meme", error);
@@ -79,7 +79,7 @@ export async function getRandomMemes(
   const seen = new Set(await swipedMemeIds(deviceId));
   const { data, error } = await supabaseAdmin
     .from("memes")
-    .select("id, template, lines, language, category");
+    .select("id, template, lines, language, category, image_url, image_path");
   if (error) fail("Could not load memes", error);
 
   const pool = ((data ?? []) as MemeRow[]).filter((m) => !seen.has(m.id));
@@ -219,7 +219,7 @@ export async function getMatchingUsers(deviceId: string, limit = 10): Promise<Ma
       .in("device_id", scored.map((match) => match.device_id)),
     supabaseAdmin
       .from("memes")
-      .select("id, template, lines, language, category")
+      .select("id, template, lines, language, category, image_url, image_path")
       .in("id", sharedMemeIds),
   ]);
   if (statsResult.error) fail("Could not load matching profiles", statsResult.error);

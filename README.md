@@ -334,7 +334,7 @@ Create a `.env` file in the project root with the following variables. Do not co
 
 ### Production hosting (self-hosting)
 
-The project is built on TanStack Start and can be self-hosted. See the [Lovable self-hosting guide](https://docs.lovable.dev/tips-and-tricks/self-hosting) for manual setup instructions.
+The project is built on TanStack Start and can be self-hosted. See the [Lovable self-hosting guide](https://docs.lovable.dev/tips-tricks/self-hosting) for manual setup instructions.
 
 ---
 

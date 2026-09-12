@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { jsonError } from "@/lib/api-http";
+
 
 /**
  * Server-side proxy for the external meme image service.
@@ -10,7 +12,7 @@ export const Route = createFileRoute("/api/public/meme-image/$id")({
       GET: async ({ params, request }) => {
         const id = params.id;
         if (!/^[0-9a-f-]{36}$/i.test(id)) {
-          return new Response("Invalid meme id", { status: 400 });
+          return jsonError("Invalid meme id.", 400);
         }
 
         const url = new URL(request.url);
@@ -22,13 +24,13 @@ export const Route = createFileRoute("/api/public/meme-image/$id")({
         try {
           const { getMemeById, imageSource } = await import("@/lib/meme.server");
           const meme = await getMemeById(id);
-          if (!meme) return new Response("Meme not found", { status: 404 });
+          if (!meme) return jsonError("Meme not found.", 404);
 
           const source = imageSource(meme, width);
           const upstream = await fetch(source.url, { headers: source.headers });
           if (!upstream.ok || !upstream.body) {
             console.error("[meme-image] upstream returned", upstream.status);
-            return new Response("Image temporarily unavailable", { status: 502 });
+            return jsonError("Image temporarily unavailable.", 502);
           }
 
           return new Response(upstream.body, {
@@ -40,7 +42,7 @@ export const Route = createFileRoute("/api/public/meme-image/$id")({
           });
         } catch (error) {
           console.error("[meme-image]", error);
-          return new Response("Image temporarily unavailable", { status: 502 });
+          return jsonError("Image temporarily unavailable.", 502);
         }
       },
     },

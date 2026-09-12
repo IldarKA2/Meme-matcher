@@ -13,6 +13,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as MatchesRouteImport } from './routes/matches'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SavedRouteImport } from './routes/saved'
+import { Route as ApiSwipesRouteImport } from './routes/api/swipes'
+import { Route as ApiMemesRandomRouteImport } from './routes/api/memes/random'
+import { Route as ApiMemesSaveRouteImport } from './routes/api/memes/save'
+import { Route as ApiMemesSavedRouteImport } from './routes/api/memes/saved'
+import { Route as ApiUsersMatchesRouteImport } from './routes/api/users/matches'
+import { Route as ApiUsersStatisticsRouteImport } from './routes/api/users/statistics'
 import { Route as ApiPublicMemeImageIdRouteImport } from './routes/api/public/meme-image/$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,6 +41,36 @@ const SavedRoute = SavedRouteImport.update({
   path: '/saved',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSwipesRoute = ApiSwipesRouteImport.update({
+  id: '/api/swipes',
+  path: '/api/swipes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMemesRandomRoute = ApiMemesRandomRouteImport.update({
+  id: '/api/memes/random',
+  path: '/api/memes/random',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMemesSaveRoute = ApiMemesSaveRouteImport.update({
+  id: '/api/memes/save',
+  path: '/api/memes/save',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMemesSavedRoute = ApiMemesSavedRouteImport.update({
+  id: '/api/memes/saved',
+  path: '/api/memes/saved',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUsersMatchesRoute = ApiUsersMatchesRouteImport.update({
+  id: '/api/users/matches',
+  path: '/api/users/matches',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUsersStatisticsRoute = ApiUsersStatisticsRouteImport.update({
+  id: '/api/users/statistics',
+  path: '/api/users/statistics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicMemeImageIdRoute = ApiPublicMemeImageIdRouteImport.update({
   id: '/api/public/meme-image/$id',
   path: '/api/public/meme-image/$id',
@@ -46,6 +82,12 @@ export interface FileRoutesByFullPath {
   '/matches': typeof MatchesRoute
   '/profile': typeof ProfileRoute
   '/saved': typeof SavedRoute
+  '/api/swipes': typeof ApiSwipesRoute
+  '/api/memes/random': typeof ApiMemesRandomRoute
+  '/api/memes/save': typeof ApiMemesSaveRoute
+  '/api/memes/saved': typeof ApiMemesSavedRoute
+  '/api/users/matches': typeof ApiUsersMatchesRoute
+  '/api/users/statistics': typeof ApiUsersStatisticsRoute
   '/api/public/meme-image/$id': typeof ApiPublicMemeImageIdRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +95,12 @@ export interface FileRoutesByTo {
   '/matches': typeof MatchesRoute
   '/profile': typeof ProfileRoute
   '/saved': typeof SavedRoute
+  '/api/swipes': typeof ApiSwipesRoute
+  '/api/memes/random': typeof ApiMemesRandomRoute
+  '/api/memes/save': typeof ApiMemesSaveRoute
+  '/api/memes/saved': typeof ApiMemesSavedRoute
+  '/api/users/matches': typeof ApiUsersMatchesRoute
+  '/api/users/statistics': typeof ApiUsersStatisticsRoute
   '/api/public/meme-image/$id': typeof ApiPublicMemeImageIdRoute
 }
 export interface FileRoutesById {
@@ -61,20 +109,53 @@ export interface FileRoutesById {
   '/matches': typeof MatchesRoute
   '/profile': typeof ProfileRoute
   '/saved': typeof SavedRoute
+  '/api/swipes': typeof ApiSwipesRoute
+  '/api/memes/random': typeof ApiMemesRandomRoute
+  '/api/memes/save': typeof ApiMemesSaveRoute
+  '/api/memes/saved': typeof ApiMemesSavedRoute
+  '/api/users/matches': typeof ApiUsersMatchesRoute
+  '/api/users/statistics': typeof ApiUsersStatisticsRoute
   '/api/public/meme-image/$id': typeof ApiPublicMemeImageIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/matches' | '/profile' | '/saved' | '/api/public/meme-image/$id'
+    | '/'
+    | '/matches'
+    | '/profile'
+    | '/saved'
+    | '/api/swipes'
+    | '/api/memes/random'
+    | '/api/memes/save'
+    | '/api/memes/saved'
+    | '/api/users/matches'
+    | '/api/users/statistics'
+    | '/api/public/meme-image/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/matches' | '/profile' | '/saved' | '/api/public/meme-image/$id'
+  to:
+    | '/'
+    | '/matches'
+    | '/profile'
+    | '/saved'
+    | '/api/swipes'
+    | '/api/memes/random'
+    | '/api/memes/save'
+    | '/api/memes/saved'
+    | '/api/users/matches'
+    | '/api/users/statistics'
+    | '/api/public/meme-image/$id'
   id:
     | '__root__'
     | '/'
     | '/matches'
     | '/profile'
     | '/saved'
+    | '/api/swipes'
+    | '/api/memes/random'
+    | '/api/memes/save'
+    | '/api/memes/saved'
+    | '/api/users/matches'
+    | '/api/users/statistics'
     | '/api/public/meme-image/$id'
   fileRoutesById: FileRoutesById
 }
@@ -83,6 +164,12 @@ export interface RootRouteChildren {
   MatchesRoute: typeof MatchesRoute
   ProfileRoute: typeof ProfileRoute
   SavedRoute: typeof SavedRoute
+  ApiSwipesRoute: typeof ApiSwipesRoute
+  ApiMemesRandomRoute: typeof ApiMemesRandomRoute
+  ApiMemesSaveRoute: typeof ApiMemesSaveRoute
+  ApiMemesSavedRoute: typeof ApiMemesSavedRoute
+  ApiUsersMatchesRoute: typeof ApiUsersMatchesRoute
+  ApiUsersStatisticsRoute: typeof ApiUsersStatisticsRoute
   ApiPublicMemeImageIdRoute: typeof ApiPublicMemeImageIdRoute
 }
 
@@ -116,6 +203,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SavedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/swipes': {
+      id: '/api/swipes'
+      path: '/api/swipes'
+      fullPath: '/api/swipes'
+      preLoaderRoute: typeof ApiSwipesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/memes/random': {
+      id: '/api/memes/random'
+      path: '/api/memes/random'
+      fullPath: '/api/memes/random'
+      preLoaderRoute: typeof ApiMemesRandomRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/memes/save': {
+      id: '/api/memes/save'
+      path: '/api/memes/save'
+      fullPath: '/api/memes/save'
+      preLoaderRoute: typeof ApiMemesSaveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/memes/saved': {
+      id: '/api/memes/saved'
+      path: '/api/memes/saved'
+      fullPath: '/api/memes/saved'
+      preLoaderRoute: typeof ApiMemesSavedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/users/matches': {
+      id: '/api/users/matches'
+      path: '/api/users/matches'
+      fullPath: '/api/users/matches'
+      preLoaderRoute: typeof ApiUsersMatchesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/users/statistics': {
+      id: '/api/users/statistics'
+      path: '/api/users/statistics'
+      fullPath: '/api/users/statistics'
+      preLoaderRoute: typeof ApiUsersStatisticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/meme-image/$id': {
       id: '/api/public/meme-image/$id'
       path: '/api/public/meme-image/$id'
@@ -131,6 +260,12 @@ const rootRouteChildren: RootRouteChildren = {
   MatchesRoute: MatchesRoute,
   ProfileRoute: ProfileRoute,
   SavedRoute: SavedRoute,
+  ApiSwipesRoute: ApiSwipesRoute,
+  ApiMemesRandomRoute: ApiMemesRandomRoute,
+  ApiMemesSaveRoute: ApiMemesSaveRoute,
+  ApiMemesSavedRoute: ApiMemesSavedRoute,
+  ApiUsersMatchesRoute: ApiUsersMatchesRoute,
+  ApiUsersStatisticsRoute: ApiUsersStatisticsRoute,
   ApiPublicMemeImageIdRoute: ApiPublicMemeImageIdRoute,
 }
 export const routeTree = rootRouteImport

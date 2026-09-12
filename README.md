@@ -296,10 +296,8 @@ Create a `.env` file in the project root with the following variables. Do not co
    ```
 
 3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   # edit .env and fill in your Supabase credentials
-   ```
+   Create a `.env` file in the project root and add the variables listed in the **Environment Variables** section above.
+
 
 4. **Run the development server**
    ```bash

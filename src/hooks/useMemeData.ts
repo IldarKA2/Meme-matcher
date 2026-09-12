@@ -43,6 +43,8 @@ export function useDeck() {
     queryKey: ["deck", deviceId],
     queryFn: () => getRandomMeme({ data: { deviceId, count: 3 } }),
     enabled: Boolean(deviceId),
+    refetchOnWindowFocus: false,
+    staleTime: Infinity,
   });
   return {
     deviceId,

@@ -56,6 +56,25 @@ export function upstreamImageUrl(meme: MemeRow, width: number) {
   return `https://api.memegen.link/images/${meme.template}/${path}.png?width=${width}`;
 }
 
+/**
+ * Where the server should fetch this meme's picture from: an uploaded file in
+ * private storage, a direct image URL, or the caption-rendering service.
+ */
+export function imageSource(meme: MemeRow, width: number): { url: string; headers: HeadersInit } {
+  if (meme.image_path) {
+    const key = process.env["SUPABASE_SERVICE_ROLE_KEY"]!;
+    return {
+      url: `${process.env["SUPABASE_URL"]}/storage/v1/object/${MEME_BUCKET}/${meme.image_path
+        .split("/")
+        .map(encodeURIComponent)
+        .join("/")}`,
+      headers: { Authorization: `Bearer ${key}`, apikey: key },
+    };
+  }
+  if (meme.image_url) return { url: meme.image_url, headers: {} };
+  return { url: upstreamImageUrl(meme, width), headers: {} };
+}
+
 export async function getMemeById(memeId: string): Promise<MemeRow | null> {
   const { data, error } = await supabaseAdmin
     .from("memes")

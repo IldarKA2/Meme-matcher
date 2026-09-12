@@ -6,7 +6,11 @@ export type MemeRow = {
   lines: string[];
   language: string;
   category: string;
+  image_url?: string | null;
+  image_path?: string | null;
 };
+
+export const MEME_BUCKET = "memes";
 
 export type UserStatistics = {
   total_swipes: number;

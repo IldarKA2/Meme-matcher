@@ -54,6 +54,7 @@ function SwipePage() {
   const { saved } = useSavedMemes();
   const { stats } = useStatistics();
   const refresh = useRefreshMemeData(deviceId);
+  const bumpStats = useOptimisticStats(deviceId);
 
   const swipeFn = useServerFn(recordSwipe);
   const saveFn = useServerFn(saveMeme);
@@ -89,6 +90,11 @@ function SwipePage() {
       if (!deviceId || exit) return;
       setExit(action);
       dragRef.current = action === "like" ? SWIPE_THRESHOLD : -SWIPE_THRESHOLD;
+      const rollback = bumpStats({
+        total_swipes: 1,
+        likes_count: action === "like" ? 1 : 0,
+        dislikes_count: action === "dislike" ? 1 : 0,
+      });
       window.setTimeout(() => {
         setConsumed((c) => [...c, meme.id]);
         setDrag(0);
@@ -96,12 +102,13 @@ function SwipePage() {
         setExit(null);
         void swipeFn({ data: { deviceId, memeId: meme.id, action } })
           .then(() => refresh())
-          .catch((e: unknown) =>
-            toast.error(e instanceof Error ? e.message : "Couldn't save that swipe."),
-          );
+          .catch((e: unknown) => {
+            rollback();
+            toast.error(e instanceof Error ? e.message : "Couldn't save that swipe.");
+          });
       }, 220);
     },
-    [deviceId, exit, refresh, swipeFn],
+    [bumpStats, deviceId, exit, refresh, swipeFn],
   );
 
   const handleSave = useCallback(() => {
@@ -109,6 +116,7 @@ function SwipePage() {
     const nextSaved = !isSaved;
     setIsSaving(true);
     setSaveOverride(nextSaved);
+    const rollback = bumpStats({ saves_count: nextSaved ? 1 : -1 });
     const mutation = nextSaved ? saveFn : unsaveFn;
     void mutation({ data: { deviceId, memeId: current.id } })
       .then(() => {
@@ -116,11 +124,12 @@ function SwipePage() {
         toast.success(nextSaved ? "Saved to your collection" : "Removed from saved");
       })
       .catch((e: unknown) => {
+        rollback();
         setSaveOverride(!nextSaved);
         toast.error(e instanceof Error ? e.message : "Couldn't update that meme.");
       })
       .finally(() => setIsSaving(false));
-  }, [current, deviceId, isSaved, isSaving, refresh, saveFn, unsaveFn]);
+  }, [bumpStats, current, deviceId, isSaved, isSaving, refresh, saveFn, unsaveFn]);
 
   const handleReset = useCallback(() => {
     if (!deviceId || isResetting) return;

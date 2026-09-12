@@ -1,0 +1,3 @@
+ALTER TABLE public.memes
+  ADD COLUMN IF NOT EXISTS image_url TEXT,
+  ADD COLUMN IF NOT EXISTS image_path TEXT;

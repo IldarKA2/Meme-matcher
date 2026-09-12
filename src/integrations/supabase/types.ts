@@ -19,6 +19,8 @@ export type Database = {
           category: string
           created_at: string
           id: string
+          image_path: string | null
+          image_url: string | null
           language: string
           lines: string[]
           template: string
@@ -27,6 +29,8 @@ export type Database = {
           category?: string
           created_at?: string
           id?: string
+          image_path?: string | null
+          image_url?: string | null
           language?: string
           lines?: string[]
           template?: string
@@ -35,6 +39,8 @@ export type Database = {
           category?: string
           created_at?: string
           id?: string
+          image_path?: string | null
+          image_url?: string | null
           language?: string
           lines?: string[]
           template?: string

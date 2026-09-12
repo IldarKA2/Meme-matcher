@@ -50,10 +50,12 @@ const SWIPE_THRESHOLD = 110;
 const EXIT_DISTANCE = 720;
 
 function SwipePage() {
-  const { deviceId, deck, remaining, isLoading, isFetching, error, retry } = useDeck();
+  const { deviceId, deck, remaining, exhausted, isLoading, isFetching, error, retry } = useDeck();
   const { saved } = useSavedMemes();
   const { stats } = useStatistics();
-  const refresh = useRefreshMemeData(deviceId);
+  // Keep the deck query out of the post-swipe refresh: refetching it mid-swipe
+  // replaced the card a second time.
+  const refresh = useRefreshMemeData(deviceId, { includeDeck: false });
   const bumpStats = useOptimisticStats(deviceId);
 
   const swipeFn = useServerFn(recordSwipe);
@@ -84,6 +86,12 @@ function SwipePage() {
   useEffect(() => {
     setSaveOverride(null);
   }, [current?.id]);
+
+  // Only pull the next batch once the local queue is fully used up.
+  useEffect(() => {
+    if (!deviceId || isLoading || isFetching || error || exhausted) return;
+    if (queue.length === 0 && consumed.length > 0) void retry();
+  }, [consumed.length, deviceId, error, exhausted, isFetching, isLoading, queue.length, retry]);
 
   const commit = useCallback(
     (meme: Meme, action: "like" | "dislike") => {

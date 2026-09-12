@@ -27,11 +27,20 @@ const EMPTY_STATS = {
   updated_at: "",
 };
 
-/** Invalidate everything that changes after a swipe/save. */
-export function useRefreshMemeData(deviceId: string) {
+/**
+ * Invalidate everything that changes after a swipe/save.
+ * The deck is left alone by default so the visible card never swaps twice.
+ */
+export function useRefreshMemeData(
+  deviceId: string,
+  options?: { includeDeck?: boolean },
+) {
   const queryClient = useQueryClient();
+  const includeDeck = options?.includeDeck ?? true;
   return () => {
-    for (const key of ["deck", "saved", "stats", "liked", "matches"]) {
+    const keys = ["saved", "stats", "liked", "matches"];
+    if (includeDeck) keys.unshift("deck");
+    for (const key of keys) {
       void queryClient.invalidateQueries({ queryKey: [key, deviceId] });
     }
   };
